@@ -23,8 +23,8 @@ message(STATUS "Platform: ${ENABLE_COMPILE_FLAGS_FOR_TARGET}")
 if ("${ENABLE_COMPILE_FLAGS_FOR_TARGET}" STREQUAL "arm64")
   # 64-bit binaries can be fully optimised.
   add_definitions(-ftree-vectorize)
-elseif ("${ENABLE_COMPILE_FLAGS_FOR_TARGET}" STREQUAL "armv8-neon")
-  # Only build with 32-bit Pi 3/4 specific optimisations if requested on the command line.
+elseif ("${ENABLE_COMPILE_FLAGS_FOR_TARGET}" STREQUAL "armhf")
+  # libcamera-hdr really needs Pi 3/4 neon optimisations, lesser Pis are not supported.
   add_definitions(-mfpu=neon-fp-armv8 -ftree-vectorize)
 endif()
 
@@ -82,6 +82,11 @@ project(libcamera-jpeg)
 
 add_executable(libcamera-jpeg libcamera_jpeg.cpp)
 target_link_libraries(libcamera-jpeg common "${LIBCAMERA_LIBRARIES}" exif jpeg ${Boost_LIBRARIES} pthread "${X11_LIBRARIES}" "${EPOXY_LIBRARY}" "${DRM_LIBRARY}")
+
+project(libcamera-hdr)
+
+add_executable(libcamera-hdr libcamera_hdr.cpp pwl.cpp histogram.cpp hdr.cpp)
+target_link_libraries(libcamera-hdr common "${LIBCAMERA_LIBRARIES}" exif jpeg ${Boost_LIBRARIES} pthread "${X11_LIBRARIES}" "${EPOXY_LIBRARY}" "${DRM_LIBRARY}")
 
 install(TARGETS common encoders LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
 install(TARGETS libcamera-still libcamera-vid libcamera-hello libcamera-raw libcamera-jpeg RUNTIME DESTINATION bin)
