@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <fstream>
 #include <iostream>
 
 #include <boost/program_options.hpp>
@@ -16,7 +17,7 @@
 
 struct Options
 {
-	Options() : options_("Valid options are")
+	Options() : options_("Valid options are", 120, 80)
 	{
 		using namespace boost::program_options;
 		options_.add_options()
@@ -24,11 +25,15 @@ struct Options
 			 "Print this help message")
 			("verbose,v", value<bool>(&verbose)->default_value(false)->implicit_value(true),
 			 "Output extra debug and diagnostics")
+			("config,c", value<std::string>(&config_file)->implicit_value("config.txt"),
+			 "Read the options from a file. If no filename is specified, default to config.txt. "
+			 "In case of duplicate options, the ones provided on the command line will be used. "
+			 "Note that the config file must only contain the long form options.")
 			("info-text", value<std::string>(&info_text)->default_value("#%frame (%fps fps) exp %exp ag %ag dg %dg"),
-			 "Sets the information string on the titlebar. Available values:"
-			 "%frame (frame number), %fps (framerate) %exp (shutter speed), %ag (analogue gain)"
-			 "%dg (digital gain), %rg (red colour gain), %bg (blue colour gain),"
-			 "%focus (focus FoM value), %aelock (AE locked status)")
+			 "Sets the information string on the titlebar. Available values:\n"
+			 "%frame (frame number)\n%fps (framerate)\n%exp (shutter speed)\n%ag (analogue gain)"
+			 "\n%dg (digital gain)\n%rg (red colour gain)\n%bg (blue colour gain)"
+			 "\n%focus (focus FoM value)\n%aelock (AE locked status)")
 			("width", value<unsigned int>(&width)->default_value(0),
 			 "Set the output image width (0 = use default value)")
 			("height", value<unsigned int>(&height)->default_value(0),
@@ -91,6 +96,7 @@ struct Options
 	bool help;
 	bool verbose;
 	uint64_t timeout; // in ms
+	std::string config_file;
 	std::string output;
 	unsigned int width;
 	unsigned int height;
@@ -131,8 +137,17 @@ struct Options
 		using namespace boost::program_options;
 		using namespace libcamera;
 		variables_map vm;
+		// Read options from the command line
 		store(parse_command_line(argc, argv, options_), vm);
 		notify(vm);
+		// Read options from a file if specified
+		std::ifstream ifs(config_file.c_str());
+		if (ifs)
+		{
+			store(parse_config_file(ifs, options_), vm);
+			notify(vm);
+		}
+
 		if (help)
 		{
 			std::cout << options_;
@@ -206,6 +221,8 @@ struct Options
 	{
 		std::cout << "Options:" << std::endl;
 		std::cout << "    verbose: " << verbose << std::endl;
+		if (!config_file.empty())
+			std::cout << "    config file: " << config_file << std::endl;
 		std::cout << "    info_text:" << info_text << std::endl;
 		std::cout << "    timeout: " << timeout << std::endl;
 		std::cout << "    width: " << width << std::endl;
